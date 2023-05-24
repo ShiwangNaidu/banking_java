@@ -57,7 +57,7 @@ public class AuthController {
     }
 
     @PostMapping("/authenticate")
-    public ResponseEntity generateJwtToken(@RequestBody AuthRequest authRequest) throws Exception {
+    public ResponseEntity<?> generateJwtToken(@RequestBody AuthRequest authRequest) throws Exception {
         // System.out.println("authentication email and password" +
         // authRequest.getEmail()+ authRequest.getPassword());
         try {
@@ -66,7 +66,7 @@ public class AuthController {
             // System.out.println("authentication" + authentication.isAuthenticated());
             if (authentication.isAuthenticated()) {
                 // User user = (User) authentication.getPrincipal();
-                return ResponseEntity.status(200).body(jwtUtil.generateJwtToken(authentication.getName()));
+                return ResponseEntity.status(HttpStatus.OK).body(jwtUtil.generateJwtToken(authentication.getName()));
             } 
             else
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No User Found");
