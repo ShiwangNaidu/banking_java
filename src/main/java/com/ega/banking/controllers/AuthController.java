@@ -12,10 +12,12 @@ import org.springframework.web.bind.annotation.*;
 import com.ega.banking.entities.AuthRequest;
 import com.ega.banking.entities.AuthResponse;
 import com.ega.banking.entities.User;
+import com.ega.banking.services.UserService;
 import com.ega.banking.util.JwtTokenUtil;
 
 @RestController
-public class AuthApi {
+@RequestMapping("/users")
+public class AuthController {
 
     @Autowired
     JwtTokenUtil jwtUtil;
@@ -23,14 +25,12 @@ public class AuthApi {
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    @Autowired
+    private UserService service;
+
     @GetMapping("/get")
     public String getMsg() {
         return "hi";
-    }
-
-    @GetMapping("/users/getAuth")
-    public String getMsg2() {
-        return "hi2";
     }
 
     @PostMapping("/auth/login")
@@ -41,7 +41,7 @@ public class AuthApi {
                             request.getEmail(), request.getPassword()));
 
             User user = (User) authentication.getPrincipal();
-            String accessToken = jwtUtil.generateJwtToken(user.getUsername());
+            String accessToken = jwtUtil.generateJwtToken(user.getFirstName());
             AuthResponse response = new AuthResponse(user.getEmail(), accessToken);
 
             return ResponseEntity.ok().body(response);
@@ -51,16 +51,31 @@ public class AuthApi {
         }
     }
 
+    @PostMapping("/new")
+    public String addNewUser(@RequestBody User user) {
+        return service.addUser(user);
+    }
+
     @PostMapping("/authenticate")
-    public String generateJwtToken(@RequestBody AuthRequest authRequest) {
-        System.out.println("authentication email and password" + authRequest.getEmail()+ authRequest.getPassword());
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword()));
-        System.out.println("authentication" + authentication.isAuthenticated());
-        if (authentication.isAuthenticated()) {
-            User user = (User) authentication.getPrincipal();
-            return jwtUtil.generateJwtToken(user.getUsername());
-        } else
-            throw new UsernameNotFoundException("invalid user");
+    public ResponseEntity generateJwtToken(@RequestBody AuthRequest authRequest) throws Exception {
+        // System.out.println("authentication email and password" +
+        // authRequest.getEmail()+ authRequest.getPassword());
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword()));
+            // System.out.println("authentication" + authentication.isAuthenticated());
+            if (authentication.isAuthenticated()) {
+                // User user = (User) authentication.getPrincipal();
+                return ResponseEntity.status(200).body(jwtUtil.generateJwtToken(authentication.getName()));
+            } 
+            else
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No User Found");
+        } catch (Exception e) {
+            //e.printStackTrace();
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+        
+
     }
 }
